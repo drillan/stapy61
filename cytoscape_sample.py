@@ -5,6 +5,7 @@ from dash.dependencies import Input, Output
 import networkx as nx
 import pandas as pd
 
+
 app = dash.Dash(__name__)
 
 # Pythonのパッケージ依存関係のデータを読み込み
@@ -55,15 +56,10 @@ cyto_div = cyto.Cytoscape(
     stylesheet=stylesheet,
 )
 
-app.layout = html.Div(
-        [
-            html.H1("Dashのパッケージ依存関係"),
-            cyto_div
-        ]
-    )
+app.layout = html.Div([html.H1("Dashのパッケージ依存関係"), cyto_div])
 
 
-def get_neighbor_node_ids(node_element_dict):  # ❶
+def get_neighbor_node_ids(node_element_dict):
     """
     ノードの要素辞書から隣接ノードのIDのリストを取得する
     """
@@ -85,15 +81,43 @@ def change_neighbor_node_style(node_element_dict):
     if not node_element_dict:
         return stylesheet
 
+    tapped_node_id = node_element_dict["data"]["id"]
+
     # 隣接ノードのIDのリストを取得
     neighbor_node_ids = get_neighbor_node_ids(node_element_dict)
 
     # 隣接ノードのスタイルを作成する
     new_styles = []
 
+    # ノード用のスタイルを作成
     for node_id in neighbor_node_ids:
-        # 隣接ノードの背景色は赤
-        style = {"selector": f"#{node_id}", "style": {"background-color": "red"}}
+        style_dict = {}
+
+        # bg_color = "teal" if node["data"]["club"] == "Mr. Hi" else "navy"
+        # タップしたノード自身の背景色は黄色
+        if node_id == tapped_node_id:
+            style_dict["background-color"] = "#DAA520"
+
+        if node_id in (neighbor_node_ids + [tapped_node_id]):
+            style_dict["background-opacity"] = 1
+        else:
+            style_dict["background-opacity"] = 0.5
+
+        # タップしたノードと隣接ノード用のスタイルを作成
+        if node_id in (neighbor_node_ids + [tapped_node_id]):
+            style_dict["border-color"] = "orange"
+            style_dict["border-width"] = 2
+            style_dict["border-opacity"] = 0.6
+
+        style = {"selector": f"#{node_id}", "style": style_dict}
+        new_styles.append(style)
+
+    # タップしたノードに接続するエッジ用のスタイルを作成
+    for edge in node_element_dict["edgesData"]:
+        style = {
+            "selector": f"#{edge['id']}",
+            "style": {"line-color": "orange", "width": 2},
+        }
         new_styles.append(style)
 
     new_stylesheets = stylesheet + new_styles
